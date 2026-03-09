@@ -10,9 +10,13 @@ function createTransporter() {
     console.warn('[Mailer] Gmail credentials not set. Emails will not be sent.');
     return null;
   }
+  console.log('[Mailer] Creating transporter for:', GMAIL_USER);
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    tls: { rejectUnauthorized: false },
   });
 }
 
