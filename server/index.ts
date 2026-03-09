@@ -14,7 +14,8 @@ app.use(express.json());
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+if (!supabase) console.warn('[Server] Supabase not configured — messages will not be saved to DB.');
 
 app.post('/api/contact', async (req, res) => {
   try {
@@ -38,13 +39,15 @@ app.post('/api/contact', async (req, res) => {
     const trimmedSubject = (subject || 'No subject').trim();
     const trimmedMessage = message.trim();
 
-    const { error: dbError } = await supabase.from('contact_messages').insert([
-      { name: trimmedName, email: trimmedEmail, subject: trimmedSubject, message: trimmedMessage },
-    ]);
-    if (dbError) {
-      console.error('Supabase insert error:', dbError.message);
-    } else {
-      console.log('Message saved to database from:', trimmedEmail);
+    if (supabase) {
+      const { error: dbError } = await supabase.from('contact_messages').insert([
+        { name: trimmedName, email: trimmedEmail, subject: trimmedSubject, message: trimmedMessage },
+      ]);
+      if (dbError) {
+        console.error('Supabase insert error:', dbError.message);
+      } else {
+        console.log('Message saved to database from:', trimmedEmail);
+      }
     }
 
     const notifyResult = await sendNotificationEmail(trimmedName, trimmedEmail, trimmedSubject, trimmedMessage);
@@ -71,7 +74,7 @@ app.get('/{*path}', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-const PORT = process.env.PORT === '5000' ? 5000 : 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
