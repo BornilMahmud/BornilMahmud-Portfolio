@@ -50,17 +50,17 @@ app.post('/api/contact', async (req, res) => {
       }
     }
 
-    const notifyResult = await sendNotificationEmail(trimmedName, trimmedEmail, trimmedSubject, trimmedMessage);
-    if (notifyResult.success) {
-      console.log('Notification sent to Gmail inbox');
-    }
-
-    const thankYouResult = await sendThankYouEmail(trimmedName, trimmedEmail, trimmedSubject, trimmedMessage);
-    if (thankYouResult.success) {
-      console.log('Thank-you email sent to:', trimmedEmail);
-    }
-
+    // Respond immediately — don't make the user wait for emails
     res.json({ success: true, message: 'Message received! I will get back to you soon.' });
+
+    // Send emails in the background (non-blocking)
+    sendNotificationEmail(trimmedName, trimmedEmail, trimmedSubject, trimmedMessage)
+      .then(r => r.success ? console.log('Notification sent') : console.error('Notification failed:', r.error))
+      .catch(e => console.error('Notification error:', e?.message));
+
+    sendThankYouEmail(trimmedName, trimmedEmail, trimmedSubject, trimmedMessage)
+      .then(r => r.success ? console.log('Confirmation sent to:', trimmedEmail) : console.error('Confirmation failed:', r.error))
+      .catch(e => console.error('Confirmation error:', e?.message));
   } catch (error: any) {
     console.error('Contact API error:', error?.message || error);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
