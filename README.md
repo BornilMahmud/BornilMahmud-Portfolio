@@ -2,7 +2,7 @@
 
 Personal portfolio website for **Bornil Mahmud**, a Creative Video Editor and Developer based in Bangladesh.
 
-Live: bornilmahmud.me
+Live:https://bornilmahmud.me/
 
 ---
 
