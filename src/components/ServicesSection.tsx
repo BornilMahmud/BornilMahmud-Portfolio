@@ -5,6 +5,7 @@ import AnimatedSection from "./AnimatedSection";
 import type { Service } from "@/lib/types";
 import { defaultServices } from "@/lib/defaultData";
 import { getPopupDetails } from "@/lib/popupDetails";
+import { convertImageUrl } from "@/lib/imageUtils";
 
 function getServiceIcon(title: string) {
   if (title.toLowerCase().includes('video') || title.toLowerCase().includes('edit')) return Film;
@@ -63,7 +64,7 @@ const ServicesSection = ({ services = defaultServices }: ServicesSectionProps) =
                 >
                   {service.image_url && (
                     <div className="w-full h-32 overflow-hidden">
-                      <img src={service.image_url} alt={service.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={convertImageUrl(service.image_url)} alt={service.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     </div>
                   )}
                   <div className="p-6">

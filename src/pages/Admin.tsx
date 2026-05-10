@@ -14,9 +14,10 @@ import {
   defaultGoals,
   defaultSocialLinks,
 } from '@/lib/defaultData';
-import { LogOut, ArrowLeft, Save, Plus, Trash2, User, Zap, FolderOpen, Briefcase, GraduationCap, Target, Share2, Home, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { LogOut, ArrowLeft, Save, Plus, Trash2, User, Zap, FolderOpen, Briefcase, GraduationCap, Target, Share2, Home, FileText, ChevronDown, ChevronUp, Link } from 'lucide-react';
 import { getPopupDetails, savePopupDetails, type PopupDetailsStore, type ServicePopupDetail, type SkillPopupDetail, type GoalPopupDetail } from '@/lib/popupDetails';
 import { useNavigate } from 'react-router-dom';
+import { convertImageUrl, isShareLink } from '@/lib/imageUtils';
 
 const ADMIN_USERNAME = 'bornilmhd';
 const ADMIN_PASSWORD = 'Bornil125@';
@@ -221,10 +222,18 @@ function ProjectsEditor({ projects, onChange }: { projects: Project[]; onChange:
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Project Image URL</label>
-              <Input data-testid={`input-project-image-${index}`} placeholder="https://example.com/image.png" value={project.image_url || ''} onChange={(e) => updateProject(index, 'image_url', e.target.value || null)} className="bg-background/50 border-border/50" />
+              <p className="text-[11px] text-muted-foreground/60 mb-1">Paste any Google Drive or OneDrive share link — it auto-converts to a direct image URL.</p>
+              <div className="flex gap-2">
+                <Input data-testid={`input-project-image-${index}`} placeholder="Paste share link or direct URL" value={project.image_url || ''} onChange={(e) => updateProject(index, 'image_url', e.target.value || null)} className="bg-background/50 border-border/50" />
+                {project.image_url && isShareLink(project.image_url) && (
+                  <Button type="button" size="icon" variant="outline" title="Convert to direct URL" onClick={() => updateProject(index, 'image_url', convertImageUrl(project.image_url!))} className="flex-shrink-0">
+                    <Link className="w-4 h-4 text-primary" />
+                  </Button>
+                )}
+              </div>
               {project.image_url && (
                 <div className="mt-2 rounded-lg overflow-hidden border border-border/30 max-w-[200px]">
-                  <img src={project.image_url} alt="Preview" className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img src={convertImageUrl(project.image_url)} alt="Preview" className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}
             </div>
@@ -269,10 +278,18 @@ function ServicesEditor({ services, onChange }: { services: Service[]; onChange:
             <Input data-testid={`input-service-color-${index}`} placeholder="primary/accent/cyan" value={service.color} onChange={(e) => updateService(index, 'color', e.target.value)} className="bg-background/50 border-border/50" />
             <div>
               <label className="text-xs text-muted-foreground">Service Image URL</label>
-              <Input data-testid={`input-service-image-${index}`} placeholder="https://example.com/image.png" value={service.image_url || ''} onChange={(e) => updateService(index, 'image_url', e.target.value || null)} className="bg-background/50 border-border/50" />
+              <p className="text-[11px] text-muted-foreground/60 mb-1">Paste any Google Drive or OneDrive share link — it auto-converts to a direct image URL.</p>
+              <div className="flex gap-2">
+                <Input data-testid={`input-service-image-${index}`} placeholder="Paste share link or direct URL" value={service.image_url || ''} onChange={(e) => updateService(index, 'image_url', e.target.value || null)} className="bg-background/50 border-border/50" />
+                {service.image_url && isShareLink(service.image_url) && (
+                  <Button type="button" size="icon" variant="outline" title="Convert to direct URL" onClick={() => updateService(index, 'image_url', convertImageUrl(service.image_url!))} className="flex-shrink-0">
+                    <Link className="w-4 h-4 text-primary" />
+                  </Button>
+                )}
+              </div>
               {service.image_url && (
                 <div className="mt-2 rounded-lg overflow-hidden border border-border/30 max-w-[200px]">
-                  <img src={service.image_url} alt="Preview" className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img src={convertImageUrl(service.image_url)} alt="Preview" className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}
             </div>
@@ -342,12 +359,20 @@ function EducationEditor({ education, onChange }: { education: Education[]; onCh
               </div>
               <div className="flex-1 min-w-[120px]">
                 <label className="text-xs text-muted-foreground">Institution Logo URL</label>
-                <Input data-testid={`input-education-logo-${index}`} placeholder="https://example.com/logo.png" value={edu.logo_url || ''} onChange={(e) => updateEdu(index, 'logo_url', e.target.value || null)} className="bg-background/50 border-border/50" />
+                <p className="text-[11px] text-muted-foreground/60 mb-1">Google Drive / OneDrive share links supported.</p>
+                <div className="flex gap-2">
+                  <Input data-testid={`input-education-logo-${index}`} placeholder="Paste share link or direct URL" value={edu.logo_url || ''} onChange={(e) => updateEdu(index, 'logo_url', e.target.value || null)} className="bg-background/50 border-border/50" />
+                  {edu.logo_url && isShareLink(edu.logo_url) && (
+                    <Button type="button" size="icon" variant="outline" title="Convert to direct URL" onClick={() => updateEdu(index, 'logo_url', convertImageUrl(edu.logo_url!))} className="flex-shrink-0">
+                      <Link className="w-4 h-4 text-primary" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             {edu.logo_url && (
               <div className="rounded-lg overflow-hidden border border-border/30 max-w-[80px]">
-                <img src={edu.logo_url} alt="Logo preview" className="w-full h-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <img src={convertImageUrl(edu.logo_url)} alt="Logo preview" className="w-full h-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             )}
             <div className="pl-4 border-l-2 border-border/30 space-y-2 mt-2">

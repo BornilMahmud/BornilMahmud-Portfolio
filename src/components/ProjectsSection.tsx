@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CinematicSection, ParallaxLayer } from "./motion";
 import type { Project } from "@/lib/types";
 import { defaultProjects } from "@/lib/defaultData";
+import { convertImageUrl } from "@/lib/imageUtils";
 
 function getProjectIcon(title: string) {
   const t = title.toLowerCase();
@@ -56,7 +57,7 @@ const ProjectCard = ({ project, index }: ProjectCardProps) => {
         <div className="relative h-full glass-strong rounded-2xl border border-border/50 group-hover:border-transparent transition-all duration-500 overflow-hidden">
           {project.image_url && (
             <div className="w-full h-40 overflow-hidden">
-              <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img src={convertImageUrl(project.image_url)} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             </div>
           )}
           <div className="p-6">

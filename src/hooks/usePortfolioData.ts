@@ -19,7 +19,7 @@ export function usePortfolioData() {
   const [education, setEducation] = useState<Education[]>(defaultEducation);
   const [goals, setGoals] = useState<Goal[]>(defaultGoals);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(defaultSocialLinks);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // default data renders instantly; DB updates silently
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async (showLoading = false) => {
