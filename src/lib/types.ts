@@ -28,7 +28,10 @@ export interface Project {
   color: string;
   demo_link: string | null;
   github_link: string | null;
+  /** Primary image OR newline-separated list of image URLs for slideshow */
   image_url: string | null;
+  /** Small logo/icon for the project card */
+  logo_url?: string | null;
 }
 
 export interface Service {

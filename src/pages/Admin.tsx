@@ -174,72 +174,165 @@ function SkillsEditor({ skills, onChange }: { skills: Skill[]; onChange: (s: Ski
 }
 
 function ProjectsEditor({ projects, onChange }: { projects: Project[]; onChange: (p: Project[]) => void }) {
+  // Local tag strings — keeps cursor from jumping while typing commas
+  const [tagStrings, setTagStrings] = useState<string[]>(() => projects.map((p) => p.tags.join(', ')));
+
   const updateProject = (index: number, field: keyof Project, value: unknown) => {
     const updated = [...projects];
     updated[index] = { ...updated[index], [field]: value };
     onChange(updated);
   };
 
+  const handleTagInput = (index: number, raw: string) => {
+    const newStrings = [...tagStrings];
+    newStrings[index] = raw;
+    setTagStrings(newStrings);
+    updateProject(index, 'tags', raw.split(',').map((t) => t.trim()).filter(Boolean));
+  };
+
   const addProject = () => {
-    onChange([...projects, { title: '', description: '', role: '', details: '', tags: [], color: 'from-blue-500 to-cyan-500', demo_link: null, github_link: null, image_url: null }]);
+    const blank: Project = { title: '', description: '', role: '', details: '', tags: [], color: 'from-blue-500 to-cyan-500', demo_link: null, github_link: null, image_url: null, logo_url: null };
+    const updated = [...projects, blank];
+    onChange(updated);
+    setTagStrings([...tagStrings, '']);
   };
 
   const removeProject = (index: number) => {
-    onChange(projects.filter((_, i) => i !== index));
+    const updated = projects.filter((_, i) => i !== index);
+    onChange(updated);
+    setTagStrings(tagStrings.filter((_, i) => i !== index));
   };
+
+  // Convert a single share line to direct URL
+  const convertLine = (line: string) => convertImageUrl(line.trim());
+
+  // Convert all lines in image_url that are share links
+  const convertAllImageLines = (index: number) => {
+    const raw = projects[index].image_url ?? '';
+    const converted = raw.split('\n').map((line) => line.trim() ? convertLine(line) : '').join('\n');
+    updateProject(index, 'image_url', converted || null);
+  };
+
+  const hasShareLinks = (imgUrl: string | null | undefined) =>
+    !!imgUrl && imgUrl.split('\n').some((l) => isShareLink(l.trim()));
 
   return (
     <div className="space-y-4">
-      {projects.map((project, index) => (
-        <Card key={index} className="glass border border-border/30">
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-sm font-medium text-muted-foreground">Project {index + 1}</span>
-              <Button variant="ghost" size="icon" onClick={() => removeProject(index)} data-testid={`button-remove-project-${index}`}>
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </Button>
-            </div>
-            <Input data-testid={`input-project-title-${index}`} placeholder="Title" value={project.title} onChange={(e) => updateProject(index, 'title', e.target.value)} className="bg-background/50 border-border/50" />
-            <Input data-testid={`input-project-role-${index}`} placeholder="Role" value={project.role} onChange={(e) => updateProject(index, 'role', e.target.value)} className="bg-background/50 border-border/50" />
-            <Textarea data-testid={`input-project-description-${index}`} placeholder="Description" value={project.description} onChange={(e) => updateProject(index, 'description', e.target.value)} rows={2} className="bg-background/50 border-border/50 resize-none" />
-            <Textarea data-testid={`input-project-details-${index}`} placeholder="Details" value={project.details} onChange={(e) => updateProject(index, 'details', e.target.value)} rows={2} className="bg-background/50 border-border/50 resize-none" />
-            <Input data-testid={`input-project-tags-${index}`} placeholder="Tags (comma separated)" value={project.tags.join(', ')} onChange={(e) => updateProject(index, 'tags', e.target.value.split(',').map((t) => t.trim()).filter(Boolean))} className="bg-background/50 border-border/50" />
-            <div className="flex gap-3 flex-wrap">
-              <div className="flex-1 min-w-[120px]">
-                <label className="text-xs text-muted-foreground">Color gradient</label>
-                <Input data-testid={`input-project-color-${index}`} placeholder="from-blue-500 to-cyan-500" value={project.color} onChange={(e) => updateProject(index, 'color', e.target.value)} className="bg-background/50 border-border/50" />
+      {projects.map((project, index) => {
+        const imageLines = (project.image_url ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+        const logoUrl = project.logo_url ?? '';
+
+        return (
+          <Card key={index} className="glass border border-border/30">
+            <CardContent className="pt-4 space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-sm font-medium text-muted-foreground">Project {index + 1}</span>
+                <Button variant="ghost" size="icon" onClick={() => removeProject(index)} data-testid={`button-remove-project-${index}`}>
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </Button>
               </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <div className="flex-1 min-w-[120px]">
-                <label className="text-xs text-muted-foreground">Demo Link</label>
-                <Input data-testid={`input-project-demo-${index}`} placeholder="https://..." value={project.demo_link || ''} onChange={(e) => updateProject(index, 'demo_link', e.target.value || null)} className="bg-background/50 border-border/50" />
-              </div>
-              <div className="flex-1 min-w-[120px]">
-                <label className="text-xs text-muted-foreground">GitHub Link</label>
-                <Input data-testid={`input-project-github-${index}`} placeholder="https://..." value={project.github_link || ''} onChange={(e) => updateProject(index, 'github_link', e.target.value || null)} className="bg-background/50 border-border/50" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Project Image URL</label>
-              <p className="text-[11px] text-muted-foreground/60 mb-1">Paste any Google Drive or OneDrive share link — it auto-converts to a direct image URL.</p>
-              <div className="flex gap-2">
-                <Input data-testid={`input-project-image-${index}`} placeholder="Paste share link or direct URL" value={project.image_url || ''} onChange={(e) => updateProject(index, 'image_url', e.target.value || null)} className="bg-background/50 border-border/50" />
-                {project.image_url && isShareLink(project.image_url) && (
-                  <Button type="button" size="icon" variant="outline" title="Convert to direct URL" onClick={() => updateProject(index, 'image_url', convertImageUrl(project.image_url!))} className="flex-shrink-0">
-                    <Link className="w-4 h-4 text-primary" />
-                  </Button>
+
+              <Input data-testid={`input-project-title-${index}`} placeholder="Title" value={project.title} onChange={(e) => updateProject(index, 'title', e.target.value)} className="bg-background/50 border-border/50" />
+              <Input data-testid={`input-project-role-${index}`} placeholder="Role" value={project.role} onChange={(e) => updateProject(index, 'role', e.target.value)} className="bg-background/50 border-border/50" />
+              <Textarea data-testid={`input-project-description-${index}`} placeholder="Description" value={project.description} onChange={(e) => updateProject(index, 'description', e.target.value)} rows={2} className="bg-background/50 border-border/50 resize-none" />
+              <Textarea data-testid={`input-project-details-${index}`} placeholder="Details" value={project.details} onChange={(e) => updateProject(index, 'details', e.target.value)} rows={2} className="bg-background/50 border-border/50 resize-none" />
+
+              {/* Tags — local string state prevents cursor jump */}
+              <div>
+                <label className="text-xs text-muted-foreground">Tags / Languages (comma separated)</label>
+                <Input
+                  data-testid={`input-project-tags-${index}`}
+                  placeholder="React, TypeScript, Node.js"
+                  value={tagStrings[index] ?? project.tags.join(', ')}
+                  onChange={(e) => handleTagInput(index, e.target.value)}
+                  className="bg-background/50 border-border/50"
+                />
+                {project.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {project.tags.map((t) => (
+                      <span key={t} className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20">{t}</span>
+                    ))}
+                  </div>
                 )}
               </div>
-              {project.image_url && (
-                <div className="mt-2 rounded-lg overflow-hidden border border-border/30 max-w-[200px]">
-                  <img src={convertImageUrl(project.image_url)} alt="Preview" className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-xs text-muted-foreground">Color gradient</label>
+                  <Input data-testid={`input-project-color-${index}`} placeholder="from-blue-500 to-cyan-500" value={project.color} onChange={(e) => updateProject(index, 'color', e.target.value)} className="bg-background/50 border-border/50" />
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              </div>
+
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-xs text-muted-foreground">Demo Link</label>
+                  <Input data-testid={`input-project-demo-${index}`} placeholder="https://..." value={project.demo_link || ''} onChange={(e) => updateProject(index, 'demo_link', e.target.value || null)} className="bg-background/50 border-border/50" />
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-xs text-muted-foreground">GitHub Link</label>
+                  <Input data-testid={`input-project-github-${index}`} placeholder="https://..." value={project.github_link || ''} onChange={(e) => updateProject(index, 'github_link', e.target.value || null)} className="bg-background/50 border-border/50" />
+                </div>
+              </div>
+
+              {/* Project Logo */}
+              <div>
+                <label className="text-xs text-muted-foreground">Project Logo URL</label>
+                <p className="text-[11px] text-muted-foreground/60 mb-1">Small icon shown on the project card. Google Drive / OneDrive links supported.</p>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    data-testid={`input-project-logo-${index}`}
+                    placeholder="Paste logo link or direct URL"
+                    value={logoUrl}
+                    onChange={(e) => updateProject(index, 'logo_url', e.target.value || null)}
+                    className="bg-background/50 border-border/50"
+                  />
+                  {logoUrl && isShareLink(logoUrl) && (
+                    <Button type="button" size="icon" variant="outline" title="Convert to direct URL" onClick={() => updateProject(index, 'logo_url', convertImageUrl(logoUrl))} className="flex-shrink-0">
+                      <Link className="w-4 h-4 text-primary" />
+                    </Button>
+                  )}
+                  {logoUrl && (
+                    <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-border/30 bg-card/50 flex items-center justify-center">
+                      <img src={convertImageUrl(logoUrl)} alt="Logo" className="w-8 h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Multiple images — one URL per line */}
+              <div>
+                <label className="text-xs text-muted-foreground">Project Images (one URL per line — supports slideshow)</label>
+                <p className="text-[11px] text-muted-foreground/60 mb-1">Add multiple images for a hover slideshow. Google Drive / OneDrive share links auto-convert.</p>
+                <div className="flex gap-2">
+                  <Textarea
+                    data-testid={`input-project-image-${index}`}
+                    placeholder={"https://image1.jpg\nhttps://drive.google.com/file/d/.../view"}
+                    value={project.image_url ?? ''}
+                    onChange={(e) => updateProject(index, 'image_url', e.target.value || null)}
+                    rows={3}
+                    className="bg-background/50 border-border/50 resize-none font-mono text-xs"
+                  />
+                  {hasShareLinks(project.image_url) && (
+                    <Button type="button" size="icon" variant="outline" title="Convert all share links" onClick={() => convertAllImageLines(index)} className="flex-shrink-0 self-start mt-0.5">
+                      <Link className="w-4 h-4 text-primary" />
+                    </Button>
+                  )}
+                </div>
+                {imageLines.length > 0 && (
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {imageLines.map((line, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border/30 bg-card/50">
+                        <img src={convertImageUrl(line)} alt={`img-${i + 1}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <span className="absolute bottom-0 left-0 right-0 text-center text-[9px] bg-background/70 text-muted-foreground py-0.5">{i + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
       <Button variant="outline" onClick={addProject} className="w-full" data-testid="button-add-project">
         <Plus className="w-4 h-4 mr-2" /> Add Project
       </Button>
