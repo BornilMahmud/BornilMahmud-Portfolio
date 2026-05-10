@@ -1131,10 +1131,15 @@ export default function Admin() {
     const errors: string[] = [];
     const saved: string[] = [];
 
+    // Always persist to localStorage cache — works with or without Supabase
+    const cachePayload = { profile, skills, projects, services, education, goals, socialLinks };
+    localStorage.setItem('portfolio_data_cache', JSON.stringify(cachePayload));
+    window.dispatchEvent(new Event('portfolio_cache_updated'));
+
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) {
-        setSaveMessage('Supabase not configured.');
+        setSaveMessage('Saved to browser! (Connect a database to sync across devices.)');
         setSaving(false);
         return;
       }

@@ -58,7 +58,7 @@ function ProjectSlideshow({ images, title }: { images: string[]; title: string }
 
   return (
     <div
-      className="w-full h-44 overflow-hidden relative"
+      className="w-full aspect-video overflow-hidden relative bg-card/30"
       onMouseEnter={() => {
         setIsHovered(true);
         stopped.current = false;
@@ -230,7 +230,7 @@ const ProjectCard = ({ project, index }: ProjectCardProps) => {
           >
             {/* Modal slideshow */}
             {images.length > 0 && (
-              <div className="relative w-full h-52 overflow-hidden">
+              <div className="relative w-full aspect-video overflow-hidden">
                 <ProjectSlideshow images={images} title={project.title} />
               </div>
             )}

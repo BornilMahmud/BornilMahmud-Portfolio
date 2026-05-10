@@ -11,40 +11,70 @@ import {
   defaultSocialLinks,
 } from '@/lib/defaultData';
 
+const CACHE_KEY = 'portfolio_data_cache';
+const CACHE_EVENT = 'portfolio_cache_updated';
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function applyCache(
+  cache: ReturnType<typeof loadCache>,
+  setters: {
+    setProfile: (v: Profile) => void;
+    setSkills: (v: Skill[]) => void;
+    setProjects: (v: Project[]) => void;
+    setServices: (v: Service[]) => void;
+    setEducation: (v: Education[]) => void;
+    setGoals: (v: Goal[]) => void;
+    setSocialLinks: (v: SocialLink[]) => void;
+  }
+) {
+  if (!cache) return;
+  if (cache.profile) setters.setProfile(cache.profile);
+  if (cache.skills?.length > 0) setters.setSkills(cache.skills);
+  if (cache.projects?.length > 0) setters.setProjects(cache.projects);
+  if (cache.services?.length > 0) setters.setServices(cache.services);
+  if (cache.education?.length > 0) setters.setEducation(cache.education);
+  if (cache.goals?.length > 0) setters.setGoals(cache.goals);
+  if (cache.socialLinks?.length > 0) setters.setSocialLinks(cache.socialLinks);
+}
+
 export function usePortfolioData() {
-  const [profile, setProfile] = useState<Profile>(defaultProfile);
-  const [skills, setSkills] = useState<Skill[]>(defaultSkills);
-  const [projects, setProjects] = useState<Project[]>(defaultProjects);
-  const [services, setServices] = useState<Service[]>(defaultServices);
-  const [education, setEducation] = useState<Education[]>(defaultEducation);
-  const [goals, setGoals] = useState<Goal[]>(defaultGoals);
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(defaultSocialLinks);
-  const [loading, setLoading] = useState(false); // default data renders instantly; DB updates silently
+  // Start with cache if available, otherwise defaults — zero loading flicker
+  const cached = loadCache();
+
+  const [profile, setProfile] = useState<Profile>(cached?.profile ?? defaultProfile);
+  const [skills, setSkills] = useState<Skill[]>(cached?.skills?.length ? cached.skills : defaultSkills);
+  const [projects, setProjects] = useState<Project[]>(cached?.projects?.length ? cached.projects : defaultProjects);
+  const [services, setServices] = useState<Service[]>(cached?.services?.length ? cached.services : defaultServices);
+  const [education, setEducation] = useState<Education[]>(cached?.education?.length ? cached.education : defaultEducation);
+  const [goals, setGoals] = useState<Goal[]>(cached?.goals?.length ? cached.goals : defaultGoals);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(cached?.socialLinks?.length ? cached.socialLinks : defaultSocialLinks);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const setters = { setProfile, setSkills, setProjects, setServices, setEducation, setGoals, setSocialLinks };
 
   const fetchData = useCallback(async (showLoading = false) => {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) {
+        // No Supabase — use localStorage cache (already applied on init)
         setLoading(false);
         return;
       }
 
       if (showLoading) setLoading(true);
-
-      if (!supabase) {
-        setLoading(false);
-        return;
-      }
+      if (!supabase) { setLoading(false); return; }
 
       const [
-        profileRes,
-        skillsRes,
-        projectsRes,
-        servicesRes,
-        educationRes,
-        goalsRes,
-        socialLinksRes,
+        profileRes, skillsRes, projectsRes,
+        servicesRes, educationRes, goalsRes, socialLinksRes,
       ] = await Promise.all([
         supabase.from('profiles').select('*').limit(1).single(),
         supabase.from('skills').select('*'),
@@ -69,13 +99,20 @@ export function usePortfolioData() {
     }
   }, []);
 
+  // Listen for cache updates fired by Admin panel
   useEffect(() => {
-    fetchData(true);
-  }, [fetchData]);
+    const handler = () => {
+      const fresh = loadCache();
+      applyCache(fresh, setters);
+    };
+    window.addEventListener(CACHE_EVENT, handler);
+    return () => window.removeEventListener(CACHE_EVENT, handler);
+  }, []);
+
+  useEffect(() => { fetchData(true); }, [fetchData]);
 
   useEffect(() => {
     if (!supabase) return;
-
     const channel = supabase
       .channel('portfolio-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchData())
@@ -86,31 +123,21 @@ export function usePortfolioData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'social_links' }, () => fetchData())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetchData();
-      }
+      if (document.visibilityState === 'visible') fetchData();
     };
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'portfolio_data_updated') {
-        fetchData();
-      }
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'portfolio_data_updated') fetchData();
     };
-
     document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('storage', handleStorageChange);
-
+    window.addEventListener('storage', handleStorage);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storage', handleStorage);
     };
   }, [fetchData]);
 

@@ -158,10 +158,10 @@ const IntroLoader = ({ onComplete }: IntroLoaderProps) => {
     };
 
     const yyRadius = Math.min(W, H) * 0.22;
-    const TRAVEL = 3.8;
-    const COLLISION = 1.4;
-    const FORMATION = 2.0;
-    const FLASH = 1.5;
+    const TRAVEL = 1.6;
+    const COLLISION = 0.7;
+    const FORMATION = 1.2;
+    const FLASH = 1.4;
     const T1 = TRAVEL;
     const T2 = T1 + COLLISION;
     const T3 = T2 + FORMATION;
