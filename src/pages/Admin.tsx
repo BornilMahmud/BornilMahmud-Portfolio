@@ -14,7 +14,9 @@ import {
   defaultGoals,
   defaultSocialLinks,
 } from '@/lib/defaultData';
-import { LogOut, ArrowLeft, Save, Plus, Trash2, User, Zap, FolderOpen, Briefcase, GraduationCap, Target, Share2, Home, FileText, ChevronDown, ChevronUp, Link } from 'lucide-react';
+import { LogOut, ArrowLeft, Save, Plus, Trash2, User, Zap, FolderOpen, Briefcase, GraduationCap, Target, Share2, Home, FileText, ChevronDown, ChevronUp, Link, Layers } from 'lucide-react';
+import { useTechStack } from '@/hooks/useTechStack';
+import type { TechCategory, TechItem } from '@/lib/defaultTechData';
 import { getPopupDetails, savePopupDetails, type PopupDetailsStore, type ServicePopupDetail, type SkillPopupDetail, type GoalPopupDetail } from '@/lib/popupDetails';
 import { useNavigate } from 'react-router-dom';
 import { convertImageUrl, isShareLink } from '@/lib/imageUtils';
@@ -26,6 +28,7 @@ const AUTH_KEY = 'admin_authenticated';
 const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'skills', label: 'Skills', icon: Zap },
+  { id: 'techstack', label: 'Tech Stack', icon: Layers },
   { id: 'projects', label: 'Projects', icon: FolderOpen },
   { id: 'services', label: 'Services', icon: Briefcase },
   { id: 'education', label: 'Education', icon: GraduationCap },
@@ -635,6 +638,124 @@ function ArrayField({ label, values, onChange }: { label: string; values: string
   );
 }
 
+function TechStackEditor() {
+  const { categories, saveCategories } = useTechStack();
+  const [activeCatId, setActiveCatId] = useState(categories[0]?.id ?? 'frontend');
+  const emptyItem = { name: '', description: '', icon: '', level: 80 };
+  const [newItem, setNewItem] = useState<TechItem>(emptyItem);
+
+  const activeCategory = categories.find((c) => c.id === activeCatId) ?? categories[0];
+
+  const updateItem = (catId: string, index: number, field: keyof TechItem, value: string | number) => {
+    const updated = categories.map((cat) => {
+      if (cat.id !== catId) return cat;
+      const items = [...cat.items];
+      items[index] = { ...items[index], [field]: value };
+      return { ...cat, items };
+    });
+    saveCategories(updated);
+  };
+
+  const removeItem = (catId: string, index: number) => {
+    const updated = categories.map((cat) => {
+      if (cat.id !== catId) return cat;
+      return { ...cat, items: cat.items.filter((_, i) => i !== index) };
+    });
+    saveCategories(updated);
+  };
+
+  const addItem = () => {
+    if (!newItem.name.trim()) return;
+    const updated = categories.map((cat) => {
+      if (cat.id !== activeCatId) return cat;
+      return { ...cat, items: [...cat.items, { ...newItem }] };
+    });
+    saveCategories(updated);
+    setNewItem(emptyItem);
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">Changes save instantly to your browser. No database required.</p>
+
+      {/* Category tabs */}
+      <div className="flex flex-wrap gap-2 pb-1">
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCatId(cat.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              activeCatId === cat.id
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border/30 text-muted-foreground hover:border-primary/40 hover:text-foreground bg-card/40'
+            }`}
+          >
+            {cat.emoji} {cat.label}
+            <span className="ml-1 opacity-60">({cat.items.length})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Item list */}
+      <div className="space-y-2">
+        {activeCategory?.items.map((item, index) => (
+          <Card key={index} className="glass border border-border/30">
+            <CardContent className="pt-3 pb-3 space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg bg-background/60 border border-border/20">
+                  <img src={item.icon} alt={item.name} className="w-6 h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{item.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                </div>
+                <span className="text-xs font-bold text-primary flex-shrink-0">{item.level}%</span>
+                <Button variant="ghost" size="icon" onClick={() => removeItem(activeCatId, index)}>
+                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                </Button>
+              </div>
+              {/* Inline edit */}
+              <details className="group">
+                <summary className="text-[11px] text-muted-foreground cursor-pointer select-none hover:text-primary transition-colors">Edit details</summary>
+                <div className="mt-2 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input value={item.name} placeholder="Name" onChange={(e) => updateItem(activeCatId, index, 'name', e.target.value)} className="bg-background/50 border-border/50 text-xs h-8" />
+                    <Input value={item.level} type="number" min={0} max={100} placeholder="Level %" onChange={(e) => updateItem(activeCatId, index, 'level', Number(e.target.value))} className="bg-background/50 border-border/50 text-xs h-8" />
+                  </div>
+                  <Input value={item.description} placeholder="Description" onChange={(e) => updateItem(activeCatId, index, 'description', e.target.value)} className="bg-background/50 border-border/50 text-xs h-8" />
+                  <Input value={item.icon} placeholder="Icon URL" onChange={(e) => updateItem(activeCatId, index, 'icon', e.target.value)} className="bg-background/50 border-border/50 text-xs h-8 font-mono" />
+                </div>
+              </details>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Add new item */}
+      <Card className="glass border border-primary/25">
+        <CardContent className="pt-4 space-y-2">
+          <p className="text-sm font-semibold text-primary">
+            {activeCategory?.emoji} Add to {activeCategory?.label}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Input placeholder="Name (e.g. React)" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} className="bg-background/50 border-border/50" />
+            <Input placeholder="Level % (0–100)" type="number" min={0} max={100} value={newItem.level} onChange={(e) => setNewItem({ ...newItem, level: Number(e.target.value) })} className="bg-background/50 border-border/50" />
+          </div>
+          <Input placeholder="Short description" value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} className="bg-background/50 border-border/50" />
+          <Input placeholder="Icon URL" value={newItem.icon} onChange={(e) => setNewItem({ ...newItem, icon: e.target.value })} className="bg-background/50 border-border/50 font-mono text-xs" />
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Tip — use Devicons CDN:<br />
+            <code className="text-primary/80">https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg</code>
+          </p>
+          <Button onClick={addItem} className="w-full" disabled={!newItem.name.trim()}>
+            <Plus className="w-4 h-4 mr-2" /> Add Item
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function DetailsEditor({
   services, skills, goals,
   onServicesChange, onSkillsChange, onGoalsChange,
@@ -1197,6 +1318,7 @@ export default function Admin() {
             {activeTab === 'education' && <EducationEditor education={education} onChange={setEducation} />}
             {activeTab === 'goals' && <GoalsEditor goals={goals} onChange={setGoals} />}
             {activeTab === 'socialLinks' && <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />}
+            {activeTab === 'techstack' && <TechStackEditor />}
             {activeTab === 'cardDetails' && <DetailsEditor services={services} skills={skills} goals={goals} onServicesChange={setServices} onSkillsChange={setSkills} onGoalsChange={setGoals} />}
           </CardContent>
         </Card>

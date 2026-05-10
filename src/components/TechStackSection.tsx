@@ -1,138 +1,8 @@
 import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { useTechStack } from "@/hooks/useTechStack";
 
-interface TechItem {
-  name: string;
-  description: string;
-  icon: string;
-  level: number;
-}
-
-interface TechCategory {
-  id: string;
-  label: string;
-  emoji: string;
-  title: string;
-  subtitle: string;
-  items: TechItem[];
-}
-
-// ─── Devicon CDN helper ──────────────────────────────────────────────────────
-const D = (name: string, variant = "original") =>
-  `https://cdn.jsdelivr.net/gh/devicons/devicon/icons/${name}/${name}-${variant}.svg`;
-
-const TECH_CATEGORIES: TechCategory[] = [
-  {
-    id: "frontend",
-    label: "Frontend",
-    emoji: "🖥️",
-    title: "Frontend Development",
-    subtitle: "Creating beautiful, responsive user interfaces",
-    items: [
-      { name: "HTML", description: "Structuring web content effectively", icon: D("html5"), level: 95 },
-      { name: "CSS", description: "Designing responsive and modern UIs", icon: D("css3"), level: 90 },
-      { name: "JavaScript", description: "Dynamic and interactive web experiences", icon: D("javascript"), level: 88 },
-      { name: "TypeScript", description: "Type-safe modern JavaScript development", icon: D("typescript"), level: 82 },
-      { name: "React.js", description: "Building scalable single-page applications", icon: D("react"), level: 85 },
-      { name: "Next.js", description: "Server-side rendering & static generation", icon: D("nextjs"), level: 75 },
-      { name: "Tailwind CSS", description: "Utility-first CSS framework for rapid UI", icon: D("tailwindcss"), level: 90 },
-      { name: "Bootstrap", description: "Responsive, mobile-first CSS framework", icon: D("bootstrap"), level: 85 },
-      { name: "Framer Motion", description: "Declarative animations & gestures for React", icon: D("framermotion"), level: 78 },
-    ],
-  },
-  {
-    id: "backend",
-    label: "Backend",
-    emoji: "⚙️",
-    title: "Backend Development",
-    subtitle: "Building robust server-side applications",
-    items: [
-      { name: "Python", description: "Versatile scripting and backend development", icon: D("python"), level: 85 },
-      { name: "Django", description: "High-level Python web framework", icon: D("django", "plain"), level: 80 },
-      { name: "PHP", description: "Server-side scripting language", icon: D("php"), level: 78 },
-      { name: "Laravel", description: "Elegant PHP web application framework", icon: D("laravel", "original"), level: 75 },
-      { name: "Node.js", description: "Server-side JavaScript runtime", icon: D("nodejs"), level: 80 },
-      { name: "Express.js", description: "Minimalist Node.js web framework", icon: D("express"), level: 78 },
-      { name: "REST API", description: "RESTful architecture & API best practices", icon: D("nodejs"), level: 85 },
-    ],
-  },
-  {
-    id: "databases",
-    label: "Databases",
-    emoji: "🗄️",
-    title: "Database Management",
-    subtitle: "Storing and managing data efficiently",
-    items: [
-      { name: "MySQL", description: "Reliable relational database management", icon: D("mysql"), level: 85 },
-      { name: "PostgreSQL", description: "Advanced open-source relational database", icon: D("postgresql"), level: 80 },
-      { name: "MongoDB", description: "Flexible NoSQL document database", icon: D("mongodb"), level: 78 },
-      { name: "SQLite", description: "Lightweight embedded database", icon: D("sqlite"), level: 80 },
-      { name: "Firebase", description: "Real-time cloud database by Google", icon: D("firebase"), level: 75 },
-      { name: "Supabase", description: "Open-source Firebase alternative with PostgreSQL", icon: D("supabase"), level: 72 },
-    ],
-  },
-  {
-    id: "deployment",
-    label: "Deployment",
-    emoji: "🚀",
-    title: "Deployment & DevOps",
-    subtitle: "Shipping and maintaining production apps",
-    items: [
-      { name: "Git", description: "Distributed version control system", icon: D("git"), level: 90 },
-      { name: "GitHub", description: "Code hosting & collaboration platform", icon: D("github"), level: 88 },
-      { name: "Vercel", description: "Frontend cloud deployment platform", icon: D("vercel"), level: 85 },
-      { name: "Netlify", description: "Modern web hosting & CI/CD", icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/netlify/netlify-original.svg", level: 80 },
-      { name: "Linux", description: "Server administration & command line", icon: D("linux"), level: 75 },
-      { name: "Docker", description: "Containerized application deployment", icon: D("docker"), level: 65 },
-    ],
-  },
-  {
-    id: "tools",
-    label: "Tools",
-    emoji: "🛠️",
-    title: "Development Tools",
-    subtitle: "Tools that power my daily workflow",
-    items: [
-      { name: "VS Code", description: "Primary code editor with extensions", icon: D("vscode"), level: 95 },
-      { name: "Postman", description: "API testing and documentation", icon: D("postman"), level: 88 },
-      { name: "Figma", description: "UI/UX design and prototyping", icon: D("figma"), level: 75 },
-      { name: "npm", description: "Node.js package manager", icon: D("npm"), level: 88 },
-      { name: "Premiere Pro", description: "Professional video editing suite", icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/premierepro/premierepro-original.svg", level: 95 },
-      { name: "After Effects", description: "Motion graphics & visual effects", icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/aftereffects/aftereffects-original.svg", level: 92 },
-    ],
-  },
-  {
-    id: "aitools",
-    label: "AI Tools",
-    emoji: "🤖",
-    title: "AI Tools",
-    subtitle: "Leveraging AI to boost productivity and create smarter solutions",
-    items: [
-      { name: "ChatGPT", description: "AI assistant for coding and content creation", icon: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg", level: 95 },
-      { name: "GitHub Copilot", description: "AI-powered code completion assistant", icon: D("github"), level: 90 },
-      { name: "Gemini", description: "Google AI for research and automation", icon: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg", level: 85 },
-      { name: "Claude AI", description: "AI for code review, writing & analysis", icon: "https://upload.wikimedia.org/wikipedia/commons/8/8b/Claude_AI_logo.svg", level: 85 },
-      { name: "DeepSeek", description: "Advanced AI for code generation & reasoning", icon: "https://upload.wikimedia.org/wikipedia/commons/e/ec/DeepSeek_logo.svg", level: 80 },
-      { name: "Midjourney", description: "AI image generation for creative projects", icon: "https://upload.wikimedia.org/wikipedia/commons/e/e6/Midjourney_Emblem.png", level: 82 },
-    ],
-  },
-  {
-    id: "video",
-    label: "Video",
-    emoji: "🎬",
-    title: "Video Editing",
-    subtitle: "Crafting cinematic stories through professional video production",
-    items: [
-      { name: "Premiere Pro", description: "Industry-standard professional video editing", icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/premierepro/premierepro-original.svg", level: 95 },
-      { name: "After Effects", description: "Motion graphics, VFX & compositing", icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/aftereffects/aftereffects-original.svg", level: 92 },
-      { name: "DaVinci Resolve", description: "Professional color grading & editing", icon: "https://upload.wikimedia.org/wikipedia/commons/9/90/DaVinci_Resolve_17_logo.svg", level: 88 },
-      { name: "CapCut", description: "Fast short-form content editing for social media", icon: "https://upload.wikimedia.org/wikipedia/commons/c/c0/CapCut_logo_2022.svg", level: 90 },
-      { name: "Canva", description: "Quick graphics and thumbnail creation", icon: "https://upload.wikimedia.org/wikipedia/commons/b/bb/Canva_Logo.svg", level: 85 },
-    ],
-  },
-];
-
-// ─── Fallback icon component (letter-based when img fails) ───────────────────
+// ─── Fallback icon (letter) when img fails ────────────────────────────────────
 function TechIcon({ src, name }: { src: string; name: string }) {
   return (
     <img
@@ -154,8 +24,8 @@ function TechIcon({ src, name }: { src: string; name: string }) {
   );
 }
 
-// ─── Individual tech card ────────────────────────────────────────────────────
-function TechCard({ item, index }: { item: TechItem; index: number }) {
+// ─── Individual tech card ─────────────────────────────────────────────────────
+function TechCard({ item, index }: { item: { name: string; description: string; icon: string; level: number }; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-30px" });
 
@@ -172,7 +42,9 @@ function TechCard({ item, index }: { item: TechItem; index: number }) {
         <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg bg-background/60 border border-border/20">
           <TechIcon src={item.icon} name={item.name} />
         </div>
-        <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-tight">{item.name}</h4>
+        <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+          {item.name}
+        </h4>
       </div>
 
       {/* Progress bar */}
@@ -192,18 +64,16 @@ function TechCard({ item, index }: { item: TechItem; index: number }) {
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 const TechStackSection = () => {
-  const [activeId, setActiveId] = useState("frontend");
+  const { categories } = useTechStack();
+  const [activeId, setActiveId] = useState(categories[0]?.id ?? "frontend");
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
-  const active = TECH_CATEGORIES.find((c) => c.id === activeId) ?? TECH_CATEGORIES[0];
-
-  const stats = TECH_CATEGORIES.map((c) => ({ label: c.label, count: c.items.length }));
+  const active = categories.find((c) => c.id === activeId) ?? categories[0];
 
   return (
     <section ref={ref} id="techstack" className="py-20 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-card/10 to-background pointer-events-none" />
-      {/* Glowing orb background */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="container px-4 md:px-6 relative z-10">
@@ -242,7 +112,7 @@ const TechStackSection = () => {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.25 }}
         >
-          {TECH_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveId(cat.id)}
@@ -265,44 +135,18 @@ const TechStackSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
-          {/* Category title block */}
+          {/* Category title */}
           <div className="text-center mb-8">
-            <h3 className="text-2xl md:text-3xl font-black text-foreground">{active.title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{active.subtitle}</p>
-            <p className="text-xs text-primary/70 mt-1">
-              Showing {active.items.length} of {active.items.length} skills
-            </p>
+            <h3 className="text-2xl md:text-3xl font-black text-foreground">{active?.title}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{active?.subtitle}</p>
           </div>
 
           {/* Skills grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            {active.items.map((item, i) => (
-              <TechCard key={item.name} item={item} index={i} />
+            {active?.items.map((item, i) => (
+              <TechCard key={`${activeId}-${item.name}-${i}`} item={item} index={i} />
             ))}
           </div>
-        </motion.div>
-
-        {/* Stats row */}
-        <motion.div
-          className="mt-14 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 max-w-5xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              onClick={() => setActiveId(TECH_CATEGORIES.find((c) => c.label === s.label)?.id ?? activeId)}
-              className={`cursor-pointer text-center p-4 rounded-xl border transition-all duration-200 ${
-                active.label === s.label
-                  ? "border-primary/50 bg-primary/10"
-                  : "border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50"
-              }`}
-            >
-              <p className={`text-2xl font-black ${active.label === s.label ? "gradient-text" : "text-foreground"}`}>{s.count}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
-            </div>
-          ))}
         </motion.div>
       </div>
     </section>
