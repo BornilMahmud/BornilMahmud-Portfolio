@@ -1197,12 +1197,12 @@ export default function Admin() {
       }
 
       const sections = [
-        { name: 'Skills', table: 'skills', data: skills },
-        { name: 'Projects', table: 'projects', data: projects },
-        { name: 'Services', table: 'services', data: services },
-        { name: 'Education', table: 'education', data: education },
-        { name: 'Goals', table: 'goals', data: goals },
-        { name: 'Social Links', table: 'social_links', data: socialLinks },
+        { name: 'Skills', table: 'skills', data: skills, strip: [] as string[] },
+        { name: 'Projects', table: 'projects', data: projects, strip: ['logo_url'] },
+        { name: 'Services', table: 'services', data: services, strip: [] as string[] },
+        { name: 'Education', table: 'education', data: education, strip: [] as string[] },
+        { name: 'Goals', table: 'goals', data: goals, strip: [] as string[] },
+        { name: 'Social Links', table: 'social_links', data: socialLinks, strip: [] as string[] },
       ];
 
       for (const section of sections) {
@@ -1212,7 +1212,10 @@ export default function Admin() {
           if (section.data.length > 0) {
             const cleanData = section.data.map((item: any) => {
               const { id: _id, ...rest } = item;
-              return { ...rest, profile_id: profileId };
+              const row: Record<string, unknown> = { ...rest, profile_id: profileId };
+              // Strip columns not yet in the Supabase schema
+              section.strip.forEach((key) => delete row[key]);
+              return row;
             });
             const { error: insertError } = await supabase.from(section.table).insert(cleanData);
             if (insertError) {
