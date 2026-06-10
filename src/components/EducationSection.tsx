@@ -208,34 +208,33 @@ const EducationSection = ({ education = defaultEducation, certificates = [] }: E
           {/* Certificates */}
           {certificates.length > 0 && (
             <div className="mt-16">
-              <CinematicSection>
-                <div className="text-center mb-10">
-                  <motion.span
-                    className="text-accent text-sm font-semibold tracking-wider uppercase"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                  >
-                    Certifications
-                  </motion.span>
-                  <motion.h3
-                    className="text-2xl md:text-3xl font-bold mt-3"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                  >
-                    Earned <span className="gradient-text">Certificates</span>
-                  </motion.h3>
-                </div>
-              </CinematicSection>
+              <div className="text-center mb-10">
+                <motion.span
+                  className="text-accent text-sm font-semibold tracking-wider uppercase"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
+                  Certifications
+                </motion.span>
+                <motion.h3
+                  className="text-2xl md:text-3xl font-bold mt-3"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                >
+                  Earned <span className="gradient-text">Certificates</span>
+                </motion.h3>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {certificates.map((cert, index) => {
                   const images = parseImages(cert.image_url);
+                  const isLastOdd = certificates.length % 2 !== 0 && index === certificates.length - 1;
                   return (
                     <motion.div
                       key={cert.id ?? index}
-                      className="rounded-2xl glass border border-border/30 shadow-xl overflow-hidden"
+                      className={`rounded-2xl glass border border-border/30 shadow-xl overflow-hidden${isLastOdd ? ' sm:col-span-2 sm:max-w-md sm:mx-auto sm:w-full' : ''}`}
                       initial={{ opacity: 0, y: 40, scale: 0.95 }}
                       animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
                       transition={{
