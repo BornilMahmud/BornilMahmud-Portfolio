@@ -1,5 +1,5 @@
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { GraduationCap, BookOpen, Award, ExternalLink, Shield } from "lucide-react";
 import { CinematicSection } from "./motion";
 import type { Education, Certificate } from "@/lib/types";
@@ -9,6 +9,86 @@ import { convertImageUrl } from "@/lib/imageUtils";
 interface EducationSectionProps {
   education?: Education[];
   certificates?: Certificate[];
+}
+
+/** Parse newline-separated image_url into array of direct URLs */
+function parseImages(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map(convertImageUrl);
+}
+
+/** Slideshow identical to ProjectSlideshow — cycles left→right every 2s, stops at last frame, restarts on hover */
+function CertSlideshow({ images, title }: { images: string[]; title: string }) {
+  const [current, setCurrent] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const stopped = useRef(false);
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    stopped.current = false;
+
+    const timer = setInterval(() => {
+      if (stopped.current) return;
+      setCurrent((prev) => {
+        const next = prev + 1;
+        if (next >= images.length) {
+          stopped.current = true;
+          clearInterval(timer);
+          return prev;
+        }
+        return next;
+      });
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [images.length, isHovered]);
+
+  if (images.length === 0) return null;
+
+  return (
+    <div
+      className="w-full aspect-video overflow-hidden relative bg-card/30 rounded-t-2xl"
+      onMouseEnter={() => {
+        setIsHovered(true);
+        stopped.current = false;
+        setCurrent(0);
+      }}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {images.map((src, i) => (
+        <motion.img
+          key={src}
+          src={src}
+          alt={`${title} ${i + 1}`}
+          className="absolute inset-0 w-full h-full object-cover"
+          initial={false}
+          animate={{
+            x: `${(i - current) * 100}%`,
+            opacity: i === current ? 1 : 0.4,
+          }}
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+      ))}
+
+      {images.length > 1 && (
+        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-10">
+          {images.map((_, i) => (
+            <div
+              key={i}
+              className={`rounded-full transition-all duration-300 ${
+                i === current ? 'w-4 h-1.5 bg-primary' : 'w-1.5 h-1.5 bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const EducationSection = ({ education = defaultEducation, certificates = [] }: EducationSectionProps) => {
@@ -43,6 +123,7 @@ const EducationSection = ({ education = defaultEducation, certificates = [] }: E
             </div>
           </CinematicSection>
 
+          {/* Education cards */}
           <div className="space-y-6">
             {education.map((edu, eduIndex) => (
               <motion.div 
@@ -124,6 +205,7 @@ const EducationSection = ({ education = defaultEducation, certificates = [] }: E
             ))}
           </div>
 
+          {/* Certificates */}
           {certificates.length > 0 && (
             <div className="mt-16">
               <CinematicSection>
@@ -149,7 +231,7 @@ const EducationSection = ({ education = defaultEducation, certificates = [] }: E
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {certificates.map((cert, index) => {
-                  const imgSrc = cert.image_url ? convertImageUrl(cert.image_url) : null;
+                  const images = parseImages(cert.image_url);
                   return (
                     <motion.div
                       key={cert.id ?? index}
@@ -163,14 +245,8 @@ const EducationSection = ({ education = defaultEducation, certificates = [] }: E
                       }}
                       whileHover={{ y: -5, scale: 1.02 }}
                     >
-                      {imgSrc && (
-                        <div className="w-full aspect-video overflow-hidden bg-background/50">
-                          <img
-                            src={imgSrc}
-                            alt={cert.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                      {images.length > 0 && (
+                        <CertSlideshow images={images} title={cert.title} />
                       )}
                       <div className="p-6">
                         <div className="flex items-start gap-4">

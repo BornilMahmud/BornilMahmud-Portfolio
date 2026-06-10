@@ -499,11 +499,20 @@ function EducationEditor({ education, onChange }: { education: Education[]; onCh
 }
 
 function CertificatesEditor({ certificates, onChange }: { certificates: Certificate[]; onChange: (c: Certificate[]) => void }) {
-  const updateCert = (index: number, field: keyof Certificate, value: string) => {
+  const updateCert = (index: number, field: keyof Certificate, value: string | null) => {
     const updated = [...certificates];
     updated[index] = { ...updated[index], [field]: value };
     onChange(updated);
   };
+
+  const convertAllImageLines = (index: number) => {
+    const raw = certificates[index].image_url ?? '';
+    const converted = raw.split('\n').map((l) => l.trim() ? convertImageUrl(l.trim()) : '').join('\n');
+    updateCert(index, 'image_url', converted || null);
+  };
+
+  const hasShareLinks = (imgUrl: string | null | undefined) =>
+    !!imgUrl && imgUrl.split('\n').some((l) => isShareLink(l.trim()));
 
   const addCert = () => {
     onChange([...certificates, { title: '', issuer: '', issue_date: '', credential_url: null, image_url: null }]);
@@ -513,60 +522,85 @@ function CertificatesEditor({ certificates, onChange }: { certificates: Certific
 
   return (
     <div className="space-y-4">
-      {certificates.map((cert, index) => (
-        <Card key={index} className="glass border border-border/30">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Certificate {index + 1}</span>
-              <Button variant="ghost" size="icon" onClick={() => removeCert(index)}>
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Certificate Title</label>
-              <Input
-                placeholder="e.g. Google UX Design Certificate"
-                value={cert.title}
-                onChange={(e) => updateCert(index, 'title', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Issuing Organisation</label>
-              <Input
-                placeholder="e.g. Google, Coursera, Udemy"
-                value={cert.issuer}
-                onChange={(e) => updateCert(index, 'issuer', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Issue Date</label>
-              <Input
-                placeholder="e.g. January 2024"
-                value={cert.issue_date}
-                onChange={(e) => updateCert(index, 'issue_date', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Credential URL (optional)</label>
-              <Input
-                placeholder="https://coursera.org/verify/..."
-                value={cert.credential_url ?? ''}
-                onChange={(e) => updateCert(index, 'credential_url', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Certificate Image URL (optional — Google Drive / direct link)</label>
-              <Input
-                placeholder="https://drive.google.com/file/d/..."
-                value={cert.image_url ?? ''}
-                onChange={(e) => updateCert(index, 'image_url', e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      {certificates.map((cert, index) => {
+        const imageLines = (cert.image_url ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+        return (
+          <Card key={index} className="glass border border-border/30">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Certificate {index + 1}</span>
+                <Button variant="ghost" size="icon" onClick={() => removeCert(index)}>
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Certificate Title</label>
+                <Input
+                  placeholder="e.g. Google UX Design Certificate"
+                  value={cert.title}
+                  onChange={(e) => updateCert(index, 'title', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Issuing Organisation</label>
+                <Input
+                  placeholder="e.g. Google, Coursera, Udemy"
+                  value={cert.issuer}
+                  onChange={(e) => updateCert(index, 'issuer', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Issue Date</label>
+                <Input
+                  placeholder="e.g. January 2024"
+                  value={cert.issue_date}
+                  onChange={(e) => updateCert(index, 'issue_date', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Credential URL (optional)</label>
+                <Input
+                  placeholder="https://coursera.org/verify/..."
+                  value={cert.credential_url ?? ''}
+                  onChange={(e) => updateCert(index, 'credential_url', e.target.value || null)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block">Certificate Images (one URL per line — supports slideshow)</label>
+                <p className="text-[11px] text-muted-foreground/60 mb-1">Add multiple images for a 2s slideshow. Google Drive / OneDrive share links auto-convert.</p>
+                <div className="flex gap-2 items-start">
+                  <Textarea
+                    placeholder={"https://drive.google.com/file/d/...\nhttps://drive.google.com/file/d/..."}
+                    value={cert.image_url ?? ''}
+                    onChange={(e) => updateCert(index, 'image_url', e.target.value || null)}
+                    rows={3}
+                    className="bg-background/50 border-border/50 resize-none font-mono text-xs"
+                  />
+                  {hasShareLinks(cert.image_url) && (
+                    <Button type="button" size="icon" variant="outline" title="Convert all share links to direct URLs"
+                      onClick={() => convertAllImageLines(index)} className="flex-shrink-0">
+                      <Link className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                {imageLines.length > 0 && (
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {imageLines.map((url, i) => (
+                      <div key={i} className="relative w-16 h-10 rounded overflow-hidden border border-border/40 bg-background/50">
+                        <img src={convertImageUrl(url)} alt={`preview ${i + 1}`} className="w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <span className="absolute bottom-0 right-0 text-[9px] bg-black/60 text-white px-1 leading-4">{i + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
       <Button variant="outline" onClick={addCert} className="w-full">
         <Plus className="w-4 h-4 mr-2" /> Add Certificate
       </Button>
