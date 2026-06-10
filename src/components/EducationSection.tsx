@@ -230,11 +230,10 @@ const EducationSection = ({ education = defaultEducation, certificates = [] }: E
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {certificates.map((cert, index) => {
                   const images = parseImages(cert.image_url);
-                  const isLastOdd = certificates.length % 2 !== 0 && index === certificates.length - 1;
                   return (
                     <motion.div
                       key={cert.id ?? index}
-                      className={`rounded-2xl glass border border-border/30 shadow-xl overflow-hidden${isLastOdd ? ' sm:col-span-2 sm:max-w-md sm:mx-auto sm:w-full' : ''}`}
+                      className="rounded-2xl glass border border-border/30 shadow-xl overflow-hidden"
                       initial={{ opacity: 0, y: 40, scale: 0.95 }}
                       animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
                       transition={{
