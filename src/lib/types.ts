@@ -75,3 +75,13 @@ export interface SocialLink {
   platform: string;
   icon: string | null;
 }
+
+export interface Certificate {
+  id?: string;
+  profile_id?: string;
+  title: string;
+  issuer: string;
+  issue_date: string;
+  credential_url: string | null;
+  image_url: string | null;
+}

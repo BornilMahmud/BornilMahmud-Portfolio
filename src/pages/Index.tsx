@@ -25,7 +25,7 @@ const Index = () => {
     restDelta: 0.001,
   });
 
-  const { skills, projects, services, education, goals, socialLinks } = usePortfolioData();
+  const { skills, projects, services, education, goals, socialLinks, certificates } = usePortfolioData();
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
@@ -73,7 +73,7 @@ const Index = () => {
         </section>
 
         <section id="education">
-          <EducationSection education={education} />
+          <EducationSection education={education} certificates={certificates} />
         </section>
 
         <section id="goals">

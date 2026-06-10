@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Profile, Skill, Project, Service, Education, Goal, SocialLink } from '@/lib/types';
+import type { Profile, Skill, Project, Service, Education, Goal, SocialLink, Certificate } from '@/lib/types';
 import {
   defaultProfile,
   defaultSkills,
@@ -9,6 +9,7 @@ import {
   defaultEducation,
   defaultGoals,
   defaultSocialLinks,
+  defaultCertificates,
 } from '@/lib/defaultData';
 
 const CACHE_KEY = 'portfolio_data_cache';
@@ -32,6 +33,7 @@ function applyCache(
     setEducation: (v: Education[]) => void;
     setGoals: (v: Goal[]) => void;
     setSocialLinks: (v: SocialLink[]) => void;
+    setCertificates: (v: Certificate[]) => void;
   }
 ) {
   if (!cache) return;
@@ -42,6 +44,7 @@ function applyCache(
   if (cache.education?.length > 0) setters.setEducation(cache.education);
   if (cache.goals?.length > 0) setters.setGoals(cache.goals);
   if (cache.socialLinks?.length > 0) setters.setSocialLinks(cache.socialLinks);
+  if (cache.certificates?.length > 0) setters.setCertificates(cache.certificates);
 }
 
 export function usePortfolioData() {
@@ -55,10 +58,11 @@ export function usePortfolioData() {
   const [education, setEducation] = useState<Education[]>(cached?.education?.length ? cached.education : defaultEducation);
   const [goals, setGoals] = useState<Goal[]>(cached?.goals?.length ? cached.goals : defaultGoals);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(cached?.socialLinks?.length ? cached.socialLinks : defaultSocialLinks);
+  const [certificates, setCertificates] = useState<Certificate[]>(cached?.certificates?.length ? cached.certificates : defaultCertificates);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setters = { setProfile, setSkills, setProjects, setServices, setEducation, setGoals, setSocialLinks };
+  const setters = { setProfile, setSkills, setProjects, setServices, setEducation, setGoals, setSocialLinks, setCertificates };
 
   const fetchData = useCallback(async (showLoading = false) => {
     try {
@@ -74,7 +78,7 @@ export function usePortfolioData() {
 
       const [
         profileRes, skillsRes, projectsRes,
-        servicesRes, educationRes, goalsRes, socialLinksRes,
+        servicesRes, educationRes, goalsRes, socialLinksRes, certificatesRes,
       ] = await Promise.all([
         supabase.from('profiles').select('*').limit(1).single(),
         supabase.from('skills').select('*'),
@@ -83,6 +87,7 @@ export function usePortfolioData() {
         supabase.from('education').select('*'),
         supabase.from('goals').select('*'),
         supabase.from('social_links').select('*'),
+        supabase.from('certificates').select('*'),
       ]);
 
       if (profileRes.data) setProfile(profileRes.data);
@@ -92,6 +97,7 @@ export function usePortfolioData() {
       if (educationRes.data && educationRes.data.length > 0) setEducation(educationRes.data);
       if (goalsRes.data && goalsRes.data.length > 0) setGoals(goalsRes.data);
       if (socialLinksRes.data && socialLinksRes.data.length > 0) setSocialLinks(socialLinksRes.data);
+      if (certificatesRes.data && certificatesRes.data.length > 0) setCertificates(certificatesRes.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
@@ -122,6 +128,7 @@ export function usePortfolioData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'education' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'social_links' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'certificates' }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
@@ -141,5 +148,5 @@ export function usePortfolioData() {
     };
   }, [fetchData]);
 
-  return { profile, skills, projects, services, education, goals, socialLinks, loading, error, refetch: fetchData };
+  return { profile, skills, projects, services, education, goals, socialLinks, certificates, loading, error, refetch: fetchData };
 }

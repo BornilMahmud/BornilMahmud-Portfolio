@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
-import type { Profile, Skill, Project, Service, Education, Goal, SocialLink, CourseItem } from '@/lib/types';
+import type { Profile, Skill, Project, Service, Education, Goal, SocialLink, CourseItem, Certificate } from '@/lib/types';
 import {
   defaultProfile,
   defaultSkills,
@@ -13,8 +13,9 @@ import {
   defaultEducation,
   defaultGoals,
   defaultSocialLinks,
+  defaultCertificates,
 } from '@/lib/defaultData';
-import { LogOut, ArrowLeft, Save, Plus, Trash2, User, Zap, FolderOpen, Briefcase, GraduationCap, Target, Share2, Home, FileText, ChevronDown, ChevronUp, Link, Layers } from 'lucide-react';
+import { LogOut, ArrowLeft, Save, Plus, Trash2, User, Zap, FolderOpen, Briefcase, GraduationCap, Target, Share2, Home, FileText, ChevronDown, ChevronUp, Link, Layers, Medal } from 'lucide-react';
 import { useTechStack } from '@/hooks/useTechStack';
 import type { TechCategory, TechItem } from '@/lib/defaultTechData';
 import { getPopupDetails, savePopupDetails, type PopupDetailsStore, type ServicePopupDetail, type SkillPopupDetail, type GoalPopupDetail } from '@/lib/popupDetails';
@@ -32,6 +33,7 @@ const tabs = [
   { id: 'projects', label: 'Projects', icon: FolderOpen },
   { id: 'services', label: 'Services', icon: Briefcase },
   { id: 'education', label: 'Education', icon: GraduationCap },
+  { id: 'certificates', label: 'Certificates', icon: Medal },
   { id: 'goals', label: 'Goals', icon: Target },
   { id: 'socialLinks', label: 'Social Links', icon: Share2 },
   { id: 'cardDetails', label: 'Card Details', icon: FileText },
@@ -491,6 +493,82 @@ function EducationEditor({ education, onChange }: { education: Education[]; onCh
       ))}
       <Button variant="outline" onClick={addEducation} className="w-full" data-testid="button-add-education">
         <Plus className="w-4 h-4 mr-2" /> Add Education
+      </Button>
+    </div>
+  );
+}
+
+function CertificatesEditor({ certificates, onChange }: { certificates: Certificate[]; onChange: (c: Certificate[]) => void }) {
+  const updateCert = (index: number, field: keyof Certificate, value: string) => {
+    const updated = [...certificates];
+    updated[index] = { ...updated[index], [field]: value };
+    onChange(updated);
+  };
+
+  const addCert = () => {
+    onChange([...certificates, { title: '', issuer: '', issue_date: '', credential_url: null, image_url: null }]);
+  };
+
+  const removeCert = (index: number) => onChange(certificates.filter((_, i) => i !== index));
+
+  return (
+    <div className="space-y-4">
+      {certificates.map((cert, index) => (
+        <Card key={index} className="glass border border-border/30">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Certificate {index + 1}</span>
+              <Button variant="ghost" size="icon" onClick={() => removeCert(index)}>
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Certificate Title</label>
+              <Input
+                placeholder="e.g. Google UX Design Certificate"
+                value={cert.title}
+                onChange={(e) => updateCert(index, 'title', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Issuing Organisation</label>
+              <Input
+                placeholder="e.g. Google, Coursera, Udemy"
+                value={cert.issuer}
+                onChange={(e) => updateCert(index, 'issuer', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Issue Date</label>
+              <Input
+                placeholder="e.g. January 2024"
+                value={cert.issue_date}
+                onChange={(e) => updateCert(index, 'issue_date', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Credential URL (optional)</label>
+              <Input
+                placeholder="https://coursera.org/verify/..."
+                value={cert.credential_url ?? ''}
+                onChange={(e) => updateCert(index, 'credential_url', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Certificate Image URL (optional — Google Drive / direct link)</label>
+              <Input
+                placeholder="https://drive.google.com/file/d/..."
+                value={cert.image_url ?? ''}
+                onChange={(e) => updateCert(index, 'image_url', e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+      <Button variant="outline" onClick={addCert} className="w-full">
+        <Plus className="w-4 h-4 mr-2" /> Add Certificate
       </Button>
     </div>
   );
@@ -1067,6 +1145,7 @@ export default function Admin() {
   const [education, setEducation] = useState<Education[]>(defaultEducation);
   const [goals, setGoals] = useState<Goal[]>(defaultGoals);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(defaultSocialLinks);
+  const [certificates, setCertificates] = useState<Certificate[]>(defaultCertificates);
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'disconnected' | 'no-config'>('checking');
 
   useEffect(() => {
@@ -1086,7 +1165,7 @@ export default function Admin() {
           return;
         }
 
-        const [profileRes, skillsRes, projectsRes, servicesRes, educationRes, goalsRes, socialRes] = await Promise.all([
+        const [profileRes, skillsRes, projectsRes, servicesRes, educationRes, goalsRes, socialRes, certificatesRes] = await Promise.all([
           supabase.from('profiles').select('*').limit(1).single(),
           supabase.from('skills').select('*'),
           supabase.from('projects').select('*'),
@@ -1094,6 +1173,7 @@ export default function Admin() {
           supabase.from('education').select('*'),
           supabase.from('goals').select('*'),
           supabase.from('social_links').select('*'),
+          supabase.from('certificates').select('*'),
         ]);
 
         const hasErrors = [profileRes, skillsRes, projectsRes, servicesRes, educationRes, goalsRes, socialRes]
@@ -1112,6 +1192,7 @@ export default function Admin() {
         if (educationRes.data && educationRes.data.length > 0) setEducation(educationRes.data);
         if (goalsRes.data && goalsRes.data.length > 0) setGoals(goalsRes.data);
         if (socialRes.data && socialRes.data.length > 0) setSocialLinks(socialRes.data);
+        if (certificatesRes.data && certificatesRes.data.length > 0) setCertificates(certificatesRes.data);
       } catch {
         setDbStatus('disconnected');
       }
@@ -1132,7 +1213,7 @@ export default function Admin() {
     const saved: string[] = [];
 
     // Always persist to localStorage cache — works with or without Supabase
-    const cachePayload = { profile, skills, projects, services, education, goals, socialLinks };
+    const cachePayload = { profile, skills, projects, services, education, goals, socialLinks, certificates };
     localStorage.setItem('portfolio_data_cache', JSON.stringify(cachePayload));
     window.dispatchEvent(new Event('portfolio_cache_updated'));
 
@@ -1203,6 +1284,7 @@ export default function Admin() {
         { name: 'Education', table: 'education', data: education, strip: [] as string[] },
         { name: 'Goals', table: 'goals', data: goals, strip: [] as string[] },
         { name: 'Social Links', table: 'social_links', data: socialLinks, strip: [] as string[] },
+        { name: 'Certificates', table: 'certificates', data: certificates, strip: [] as string[] },
       ];
 
       for (const section of sections) {
@@ -1324,6 +1406,7 @@ export default function Admin() {
             {activeTab === 'projects' && <ProjectsEditor projects={projects} onChange={setProjects} />}
             {activeTab === 'services' && <ServicesEditor services={services} onChange={setServices} />}
             {activeTab === 'education' && <EducationEditor education={education} onChange={setEducation} />}
+            {activeTab === 'certificates' && <CertificatesEditor certificates={certificates} onChange={setCertificates} />}
             {activeTab === 'goals' && <GoalsEditor goals={goals} onChange={setGoals} />}
             {activeTab === 'socialLinks' && <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />}
             {activeTab === 'techstack' && <TechStackEditor />}

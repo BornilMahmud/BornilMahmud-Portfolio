@@ -1,4 +1,4 @@
-import type { Profile, Skill, Project, Service, Education, Goal, SocialLink } from '@/lib/types';
+import type { Profile, Skill, Project, Service, Education, Goal, SocialLink, Certificate } from '@/lib/types';
 
 export const defaultProfile: Profile = {
   name: "Bornil Mahmud",
@@ -131,3 +131,5 @@ export const defaultSocialLinks: SocialLink[] = [
   { name: "GitHub", href: "https://github.com/BornilMahmud/BornilMahmud", platform: "github", icon: null },
   { name: "LinkedIn", href: "https://www.linkedin.com/in/bornil-mahmud-9a3483325/", platform: "linkedin", icon: null },
 ];
+
+export const defaultCertificates: Certificate[] = [];

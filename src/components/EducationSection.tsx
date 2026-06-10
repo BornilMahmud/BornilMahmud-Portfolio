@@ -1,15 +1,17 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { GraduationCap, BookOpen, Award, ExternalLink } from "lucide-react";
+import { GraduationCap, BookOpen, Award, ExternalLink, Shield } from "lucide-react";
 import { CinematicSection } from "./motion";
-import type { Education } from "@/lib/types";
+import type { Education, Certificate } from "@/lib/types";
 import { defaultEducation } from "@/lib/defaultData";
+import { convertImageUrl } from "@/lib/imageUtils";
 
 interface EducationSectionProps {
   education?: Education[];
+  certificates?: Certificate[];
 }
 
-const EducationSection = ({ education = defaultEducation }: EducationSectionProps) => {
+const EducationSection = ({ education = defaultEducation, certificates = [] }: EducationSectionProps) => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 
@@ -121,6 +123,88 @@ const EducationSection = ({ education = defaultEducation }: EducationSectionProp
               </motion.div>
             ))}
           </div>
+
+          {certificates.length > 0 && (
+            <div className="mt-16">
+              <CinematicSection>
+                <div className="text-center mb-10">
+                  <motion.span
+                    className="text-accent text-sm font-semibold tracking-wider uppercase"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                  >
+                    Certifications
+                  </motion.span>
+                  <motion.h3
+                    className="text-2xl md:text-3xl font-bold mt-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                  >
+                    Earned <span className="gradient-text">Certificates</span>
+                  </motion.h3>
+                </div>
+              </CinematicSection>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {certificates.map((cert, index) => {
+                  const imgSrc = cert.image_url ? convertImageUrl(cert.image_url) : null;
+                  return (
+                    <motion.div
+                      key={cert.id ?? index}
+                      className="rounded-2xl glass border border-border/30 shadow-xl overflow-hidden"
+                      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                      animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                      transition={{
+                        duration: 0.6,
+                        delay: 0.3 + index * 0.1,
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                      }}
+                      whileHover={{ y: -5, scale: 1.02 }}
+                    >
+                      {imgSrc && (
+                        <div className="w-full aspect-video overflow-hidden bg-background/50">
+                          <img
+                            src={imgSrc}
+                            alt={cert.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5">
+                            <Shield className="h-5 w-5 text-accent" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-lg font-bold text-foreground leading-tight">{cert.title}</h4>
+                            {cert.issuer && (
+                              <p className="text-sm text-primary font-medium mt-1">{cert.issuer}</p>
+                            )}
+                            {cert.issue_date && (
+                              <p className="text-xs text-muted-foreground mt-1">{cert.issue_date}</p>
+                            )}
+                            {cert.credential_url && (
+                              <a
+                                href={cert.credential_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 mt-3 text-xs text-accent hover:text-accent/80 font-medium transition-colors"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                View Credential
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>
